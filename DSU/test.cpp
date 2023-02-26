@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cassert>
 #include "DSU.h"
 
 using namespace scl;
