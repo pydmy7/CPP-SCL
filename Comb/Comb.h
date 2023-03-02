@@ -1,6 +1,14 @@
-// template<int V, int P>
-// constexpr ModInt<P> CInv = ModInt<P>(V).inv();
- 
+#ifndef __COMB_H__
+#define __COMB_H__
+
+#include "ModInt.h"
+#include <vector>
+
+namespace scl {
+
+template<int V, int P>
+constexpr ModInt<P> CInv = ModInt<P>(V).inv();
+
 constexpr int P = 1e9 + 7;
 using Z = ModInt<P>;
 
@@ -49,3 +57,7 @@ struct Comb {
         return fac(n) * invfac(m) * invfac(n - m);
     }
 } comb;
+
+}  // namespace scl
+
+#endif  // __COMB_H__
