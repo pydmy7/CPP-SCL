@@ -7,13 +7,13 @@
 
 namespace scl {
 
-    class DSU {
+    class DisjointSetsUnion {
     private:
         int n, cnt;
         std::vector<int> p, sz;
 
     public:
-        explicit DSU(const int n) : n(n), cnt(n), p(n), sz(n, 1) {
+        explicit DisjointSetsUnion(const int n) : n(n), cnt(n), p(n), sz(n, 1) {
             std::iota(p.begin(), p.end(), 0);
         }
 
