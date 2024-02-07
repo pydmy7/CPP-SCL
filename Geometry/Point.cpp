@@ -1,6 +1,7 @@
 template<class T>
 struct Point {
-    T x, y;
+    T x;
+    T y;
     Point(T x_ = 0, T y_ = 0) : x(x_), y(y_) {}
     
     template<class U>
@@ -53,6 +54,7 @@ T dot(Point<T> a, Point<T> b) {
     return a.x * b.x + a.y * b.y;
 }
 
+// 叉积，有向面积
 template<class T>
 T cross(Point<T> a, Point<T> b) {
     return a.x * b.y - a.y * b.x;
@@ -73,15 +75,20 @@ long double length(Point<long double> p) {
 }
 
 template<class T>
-double polygonArea(const std::vector<Point<T>>& points) {
+long double polygonArea(const std::vector<Point<T>>& points) {
     if (points.size() < 3) {
         return 0.0;
     }
-    double area = 0.0;
+    long double area = 0.0;
     for (int n = points.size(), i = 0; i < n; ++i) {
         area += cross(points[i], points[(i + 1) % n]);
     }
     return area / 2.0;
+}
+
+template<class T>
+double angle(Point<T> a, Point<T> b) {
+    return std::acos(1.0 * dot(a, b) / length(a) / length(b));
 }
 
 template<class T>
@@ -91,11 +98,40 @@ struct Line {
     Line(Point<T> a_ = Point<T>(), Point<T> b_ = Point<T>()) : a(a_), b(b_) {}
 };
 
+// 点到线段的距离
+template<class T>
+double pointToSegmentDistance(Point<T> p, Line<T> l) {
+    const auto &a = l.a, &b = l.b;
+    double delte = 1.0 * dot(p - a, b - a) / square(b - a);
+    if (delte < 0.0) {
+        return length(p - a);
+    } else if (delte > 1.0) {
+        return length(p - b);
+    } else {
+        return 1.0 * length(cross(p - a, p - b)) / length(b - a);
+    }
+}
+
+// 点到直线的距离
+template<class T>
+double pointToLineDistance(Point<T> p, Line<T> l) {
+    const auto &a = l.a, &b = l.b;
+    return std::fabs(1.0 * cross(b - a, p - a) / length(b - a));
+}
+
+// 将一个点绕原点逆时针旋转90°
 template<class T>
 Point<T> rotate(Point<T> a) {
     return Point(-a.y, a.x);
 }
 
+// 将一个点绕原点顺时针旋转C的角度
+template<class T>
+Point<T> rotate(Point<T> a, double angle) {
+    return Point(a.x * std::cos(angle) + a.y * std::sin(angle), -a.x * std::sin(angle) + a.y * std::cos(angle));
+}
+
+// 不清楚
 template<class T>
 int sgn(Point<T> a) {
     return a.y > 0 || (a.y == 0 && a.x > 0) ? 1 : -1;
@@ -117,6 +153,13 @@ template<class T>
 bool pointOnSegment(Point<T> p, Line<T> l) {
     return std::abs(cross(p - l.a, l.b - l.a)) < eps && std::min(l.a.x, l.b.x) < p.x + eps && p.x - eps < std::max(l.a.x, l.b.x)
         && std::min(l.a.y, l.b.y) < p.y + eps && p.y - eps < std::max(l.a.y, l.b.y);
+}
+
+// 点在线上的投影
+template<class T>
+Point<T> pointOnSegmentMap(Point<T> p, Line<T> l) {
+    const auto &a = l.a, &b = l.b;
+    return a + (b - a) * (dot(b - a, p - a) / length(b - a));
 }
 
 template<class T>
@@ -279,6 +322,7 @@ bool segmentInPolygon(Line<T> l, std::vector<Point<T>> p) {
     return true;
 }
 
+// 不清楚
 template<class T>
 std::vector<Point<T>> hp(std::vector<Line<T>> lines) {
     std::sort(lines.begin(), lines.end(), [&](auto l1, auto l2) {
@@ -312,7 +356,6 @@ std::vector<Point<T>> hp(std::vector<Line<T>> lines) {
         
         if (cross(l.b - l.a, ls.back().b - ls.back().a) == 0) {
             if (dot(l.b - l.a, ls.back().b - ls.back().a) > 0) {
-                
                 if (!pointOnLineLeft(ls.back().a, l)) {
                     assert(ls.size() == 1);
                     ls[0] = l;
