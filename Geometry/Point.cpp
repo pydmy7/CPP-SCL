@@ -75,6 +75,11 @@ long double length(Point<long double> p) {
 }
 
 template<class T>
+Point<T> normalize(Point<T> p) {
+    return p / length(p);
+}
+
+template<class T>
 long double polygonArea(const std::vector<Point<T>>& points) {
     if (points.size() < 3) {
         return 0.0;
