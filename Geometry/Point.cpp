@@ -327,6 +327,38 @@ bool segmentInPolygon(Line<T> l, std::vector<Point<T>> p) {
     return true;
 }
 
+std::vector<Point> getHull(std::vector<Point> p) {
+    std::vector<Point> h, l;
+    std::sort(p.begin(), p.end(), [&](auto a, auto b) {
+        if (a.x != b.x) {
+            return a.x < b.x;
+        } else {
+            return a.y < b.y;
+        }
+    });
+    p.erase(std::unique(p.begin(), p.end()), p.end());
+    if (p.size() <= 1) {
+        return p;
+    }
+    
+    for (auto a : p) {
+        while (h.size() > 1 && cross(a - h.back(), a - h[h.size() - 2]) <= 0) {
+            h.pop_back();
+        }
+        while (l.size() > 1 && cross(a - l.back(), a - l[l.size() - 2]) >= 0) {
+            l.pop_back();
+        }
+        l.push_back(a);
+        h.push_back(a);
+    }
+    
+    l.pop_back();
+    std::reverse(h.begin(), h.end());
+    h.pop_back();
+    l.insert(l.end(), h.begin(), h.end());
+    return l;
+}
+
 // 不清楚
 template<class T>
 std::vector<Point<T>> hp(std::vector<Line<T>> lines) {
