@@ -2,180 +2,159 @@ template<class T>
 struct Point {
     T x;
     T y;
-    Point(T x_ = 0, T y_ = 0) : x(x_), y(y_) {}
+    Point(const T &x_ = 0, const T &y_ = 0) : x(x_), y(y_) {}
     
     template<class U>
     operator Point<U>() {
         return Point<U>(U(x), U(y));
     }
-    Point &operator+=(Point p) & {
+    Point &operator+=(const Point &p) & {
         x += p.x;
         y += p.y;
         return *this;
     }
-    Point &operator-=(Point p) & {
+    Point &operator-=(const Point &p) & {
         x -= p.x;
         y -= p.y;
         return *this;
     }
-    Point &operator*=(T v) & {
+    Point &operator*=(const T &v) & {
         x *= v;
         y *= v;
+        return *this;
+    }
+    Point &operator/=(const T &v) & {
+        x /= v;
+        y /= v;
         return *this;
     }
     Point operator-() const {
         return Point(-x, -y);
     }
-    friend Point operator+(Point a, Point b) {
+    friend Point operator+(Point a, const Point &b) {
         return a += b;
     }
-    friend Point operator-(Point a, Point b) {
+    friend Point operator-(Point a, const Point &b) {
         return a -= b;
     }
-    friend Point operator*(Point a, T b) {
+    friend Point operator*(Point a, const T &b) {
         return a *= b;
     }
-    friend Point operator*(T a, Point b) {
+    friend Point operator/(Point a, const T &b) {
+        return a /= b;
+    }
+    friend Point operator*(const T &a, Point b) {
         return b *= a;
     }
-    friend bool operator==(Point a, Point b) {
+    friend bool operator==(const Point &a, const Point &b) {
         return a.x == b.x && a.y == b.y;
     }
     friend std::istream &operator>>(std::istream &is, Point &p) {
         return is >> p.x >> p.y;
     }
-    friend std::ostream &operator<<(std::ostream &os, Point p) {
+    friend std::ostream &operator<<(std::ostream &os, const Point &p) {
         return os << "(" << p.x << ", " << p.y << ")";
     }
 };
 
 template<class T>
-T dot(Point<T> a, Point<T> b) {
+struct Line {
+    Point<T> a;
+    Point<T> b;
+    Line(const Point<T> &a_ = Point<T>(), const Point<T> &b_ = Point<T>()) : a(a_), b(b_) {}
+};
+
+template<class T>
+T dot(const Point<T> &a, const Point<T> &b) {
     return a.x * b.x + a.y * b.y;
 }
 
-// 叉积，有向面积
 template<class T>
-T cross(Point<T> a, Point<T> b) {
+T cross(const Point<T> &a, const Point<T> &b) {
     return a.x * b.y - a.y * b.x;
 }
 
 template<class T>
-T square(Point<T> p) {
+T square(const Point<T> &p) {
     return dot(p, p);
 }
 
 template<class T>
-double length(Point<T> p) {
-    return std::sqrt(double(square(p)));
-}
- 
-long double length(Point<long double> p) {
+double length(const Point<T> &p) {
     return std::sqrt(square(p));
 }
 
 template<class T>
-Point<T> normalize(Point<T> p) {
+double length(const Line<T> &l) {
+    return length(l.a - l.b);
+}
+
+template<class T>
+Point<T> normalize(const Point<T> &p) {
     return p / length(p);
 }
 
 template<class T>
-long double polygonArea(const std::vector<Point<T>>& points) {
-    if (points.size() < 3) {
-        return 0.0;
+bool parallel(const Line<T> &l1, const Line<T> &l2) {
+    return cross(l1.b - l1.a, l2.b - l2.a) == 0;
+}
+
+template<class T>
+double distance(const Point<T> &a, const Point<T> &b) {
+    return length(a - b);
+}
+
+template<class T>
+double distancePL(const Point<T> &p, const Line<T> &l) {
+    return std::abs(cross(l.a - l.b, l.a - p)) / length(l);
+}
+
+template<class T>
+double distancePS(const Point<T> &p, const Line<T> &l) {
+    if (dot(p - l.a, l.b - l.a) < 0) {
+        return distance(p, l.a);
     }
-    long double area = 0.0;
-    for (int n = points.size(), i = 0; i < n; ++i) {
-        area += cross(points[i], points[(i + 1) % n]);
+    if (dot(p - l.b, l.a - l.b) < 0) {
+        return distance(p, l.b);
     }
-    return area / 2.0;
+    return distancePL(p, l);
 }
 
 template<class T>
-double angle(Point<T> a, Point<T> b) {
-    return std::acos(1.0 * dot(a, b) / length(a) / length(b));
-}
-
-template<class T>
-struct Line {
-    Point<T> a;
-    Point<T> b;
-    Line(Point<T> a_ = Point<T>(), Point<T> b_ = Point<T>()) : a(a_), b(b_) {}
-};
-
-// 点到线段的距离
-template<class T>
-double pointToSegmentDistance(Point<T> p, Line<T> l) {
-    const auto &a = l.a, &b = l.b;
-    double delte = 1.0 * dot(p - a, b - a) / square(b - a);
-    if (delte < 0.0) {
-        return length(p - a);
-    } else if (delte > 1.0) {
-        return length(p - b);
-    } else {
-        return 1.0 * length(cross(p - a, p - b)) / length(b - a);
-    }
-}
-
-// 点到直线的距离
-template<class T>
-double pointToLineDistance(Point<T> p, Line<T> l) {
-    const auto &a = l.a, &b = l.b;
-    return std::fabs(1.0 * cross(b - a, p - a) / length(b - a));
-}
-
-// 将一个点绕原点逆时针旋转90°
-template<class T>
-Point<T> rotate(Point<T> a) {
+Point<T> rotate(const Point<T> &a) {
     return Point(-a.y, a.x);
 }
 
-// 将一个点绕原点顺时针旋转C的角度
 template<class T>
-Point<T> rotate(Point<T> a, double angle) {
-    return Point(a.x * std::cos(angle) + a.y * std::sin(angle), -a.x * std::sin(angle) + a.y * std::cos(angle));
-}
-
-// 不清楚
-template<class T>
-int sgn(Point<T> a) {
+int sgn(const Point<T> &a) {
     return a.y > 0 || (a.y == 0 && a.x > 0) ? 1 : -1;
 }
 
 template<class T>
-bool pointOnLineLeft(Point<T> p, Line<T> l) {
+bool pointOnLineLeft(const Point<T> &p, const Line<T> &l) {
     return cross(l.b - l.a, p - l.a) > 0;
 }
 
 template<class T>
-Point<T> lineIntersection(Line<T> l1, Line<T> l2) {
+Point<T> lineIntersection(const Line<T> &l1, const Line<T> &l2) {
     return l1.a + (l1.b - l1.a) * (cross(l2.b - l2.a, l1.a - l2.a) / cross(l2.b - l2.a, l1.a - l1.b));
 }
 
-constexpr long double eps = 1E-8;
-
 template<class T>
-bool pointOnSegment(Point<T> p, Line<T> l) {
-    return std::abs(cross(p - l.a, l.b - l.a)) < eps && std::min(l.a.x, l.b.x) < p.x + eps && p.x - eps < std::max(l.a.x, l.b.x)
-        && std::min(l.a.y, l.b.y) < p.y + eps && p.y - eps < std::max(l.a.y, l.b.y);
-}
-
-// 点在线上的投影
-template<class T>
-Point<T> pointOnSegmentMap(Point<T> p, Line<T> l) {
-    const auto &a = l.a, &b = l.b;
-    return a + (b - a) * (dot(b - a, p - a) / length(b - a));
+bool pointOnSegment(const Point<T> &p, const Line<T> &l) {
+    return cross(p - l.a, l.b - l.a) == 0 && std::min(l.a.x, l.b.x) <= p.x && p.x <= std::max(l.a.x, l.b.x)
+        && std::min(l.a.y, l.b.y) <= p.y && p.y <= std::max(l.a.y, l.b.y);
 }
 
 template<class T>
-bool pointInPolygon(Point<T> a, std::vector<Point<T>> p) {
+bool pointInPolygon(const Point<T> &a, const std::vector<Point<T>> &p) {
     int n = p.size();
     for (int i = 0; i < n; i++) {
         if (pointOnSegment(a, Line(p[i], p[(i + 1) % n]))) {
             return true;
         }
     }
-
+    
     int t = 0;
     for (int i = 0; i < n; i++) {
         auto u = p[i];
@@ -191,12 +170,12 @@ bool pointInPolygon(Point<T> a, std::vector<Point<T>> p) {
     return t == 1;
 }
 
-// 0 : not intersect  不相交
-// 1 : strictly intersect  严格相交
-// 2 : overlap  重叠
-// 3 : intersect at endpoint  在端点相交
+// 0 : not intersect
+// 1 : strictly intersect
+// 2 : overlap
+// 3 : intersect at endpoint
 template<class T>
-std::tuple<int, Point<T>, Point<T>> segmentIntersection(Line<T> l1, Line<T> l2) {
+std::tuple<int, Point<T>, Point<T>> segmentIntersection(const Line<T> &l1, const Line<T> &l2) {
     if (std::max(l1.a.x, l1.b.x) < std::min(l2.a.x, l2.b.x)) {
         return {0, Point<T>(), Point<T>()};
     }
@@ -251,7 +230,15 @@ std::tuple<int, Point<T>, Point<T>> segmentIntersection(Line<T> l1, Line<T> l2) 
 }
 
 template<class T>
-bool segmentInPolygon(Line<T> l, std::vector<Point<T>> p) {
+double distanceSS(const Line<T> &l1, const Line<T> &l2) {
+    if (std::get<0>(segmentIntersection(l1, l2)) != 0) {
+        return 0.0;
+    }
+    return std::min({distancePS(l1.a, l2), distancePS(l1.b, l2), distancePS(l2.a, l1), distancePS(l2.b, l1)});
+}
+
+template<class T>
+bool segmentInPolygon(const Line<T> &l, const std::vector<Point<T>> &p) {
     int n = p.size();
     if (!pointInPolygon(l.a, p)) {
         return false;
@@ -327,39 +314,6 @@ bool segmentInPolygon(Line<T> l, std::vector<Point<T>> p) {
     return true;
 }
 
-std::vector<Point> getHull(std::vector<Point> p) {
-    std::vector<Point> h, l;
-    std::sort(p.begin(), p.end(), [&](auto a, auto b) {
-        if (a.x != b.x) {
-            return a.x < b.x;
-        } else {
-            return a.y < b.y;
-        }
-    });
-    p.erase(std::unique(p.begin(), p.end()), p.end());
-    if (p.size() <= 1) {
-        return p;
-    }
-    
-    for (auto a : p) {
-        while (h.size() > 1 && cross(a - h.back(), a - h[h.size() - 2]) <= 0) {
-            h.pop_back();
-        }
-        while (l.size() > 1 && cross(a - l.back(), a - l[l.size() - 2]) >= 0) {
-            l.pop_back();
-        }
-        l.push_back(a);
-        h.push_back(a);
-    }
-    
-    l.pop_back();
-    std::reverse(h.begin(), h.end());
-    h.pop_back();
-    l.insert(l.end(), h.begin(), h.end());
-    return l;
-}
-
-// 不清楚
 template<class T>
 std::vector<Point<T>> hp(std::vector<Line<T>> lines) {
     std::sort(lines.begin(), lines.end(), [&](auto l1, auto l2) {
@@ -393,6 +347,7 @@ std::vector<Point<T>> hp(std::vector<Line<T>> lines) {
         
         if (cross(l.b - l.a, ls.back().b - ls.back().a) == 0) {
             if (dot(l.b - l.a, ls.back().b - ls.back().a) > 0) {
+                
                 if (!pointOnLineLeft(ls.back().a, l)) {
                     assert(ls.size() == 1);
                     ls[0] = l;
